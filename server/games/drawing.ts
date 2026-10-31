@@ -1,5 +1,5 @@
 import { nameOf, shuffle, type GameContext, type GameModule } from './types.ts';
-import { DRAWING_WORDS } from './words.ts';
+import { DRAWING_WORDS, parseCustomWords } from './words.ts';
 
 export interface Stroke {
   color: string;
@@ -16,6 +16,7 @@ interface DrawingState {
   drawer: string;
   word: string;
   usedWords: string[];
+  pool: string[]; // 이번 게임에서 쓰는 제시어 목록
   strokes: Stroke[];
   guessed: string[];
   feed: { id: string; text: string; correct?: boolean }[];
@@ -42,8 +43,8 @@ function startTurn(state: DrawingState, ctx: GameContext) {
     ctx.announce(`🏁 그림 맞추기 끝! 1등은 ${nameOf(ctx, ranking[0])}님 (${state.scores[ranking[0]] ?? 0}점)`);
     return;
   }
-  const remaining = DRAWING_WORDS.filter((w) => !state.usedWords.includes(w));
-  const word = shuffle(remaining.length ? remaining : DRAWING_WORDS, ctx.random)[0];
+  const remaining = state.pool.filter((w) => !state.usedWords.includes(w));
+  const word = shuffle(remaining.length ? remaining : state.pool, ctx.random)[0];
   state.usedWords.push(word);
   Object.assign(state, {
     phase: 'drawing',
@@ -75,11 +76,41 @@ export const drawing: GameModule<DrawingState> = {
     description: '한 사람이 제시어를 그리고 나머지가 맞힙니다. 빨리 맞힐수록 점수가 높고, 맞힌 사람이 많을수록 그린 사람도 점수를 받습니다.',
     minPlayers: 2,
     maxPlayers: 15,
+    options: [
+      { key: 'rounds', label: '라운드 (모두 한 번씩 그리기)', default: '1', choices: ['1', '2', '3'].map((v) => ({ value: v, label: `${v}라운드` })) },
+      { key: 'turnSeconds', label: '그리는 시간', default: '80', choices: ['60', '80', '100'].map((v) => ({ value: v, label: `${v}초` })) },
+      {
+        key: 'wordSet',
+        label: '제시어',
+        default: 'basic',
+        choices: [
+          { value: 'basic', label: `기본 단어 (${DRAWING_WORDS.length}개)` },
+          { value: 'mixed', label: '기본 + 우리끼리 단어' },
+          { value: 'custom', label: '우리끼리 단어만' },
+        ],
+      },
+      {
+        key: 'customWords',
+        label: '우리끼리 단어 (쉼표나 줄바꿈으로 구분)',
+        default: '',
+        type: 'textarea',
+        placeholder: '예: 우리 집 강아지, 담임선생님, 학교 앞 떡볶이집',
+        showIf: { key: 'wordSet', value: ['mixed', 'custom'] },
+      },
+    ],
   },
 
   setup(ctx, options) {
     const rounds = Math.max(1, Math.min(3, Number(options.rounds) || 1));
     const turnSeconds = [60, 80, 100].includes(Number(options.turnSeconds)) ? Number(options.turnSeconds) : 80;
+    const custom = parseCustomWords(options.customWords);
+    let pool = DRAWING_WORDS;
+    if (options.wordSet === 'custom') {
+      if (custom.length < 1) throw new Error('우리끼리 단어를 입력해 주세요.');
+      pool = custom;
+    } else if (options.wordSet === 'mixed') {
+      pool = [...new Set([...DRAWING_WORDS, ...custom])];
+    }
     const ids = ctx.players.map((p) => p.id);
     const queue: string[] = [];
     for (let r = 0; r < rounds; r++) queue.push(...shuffle(ids, ctx.random));
@@ -91,6 +122,7 @@ export const drawing: GameModule<DrawingState> = {
       drawer: '',
       word: '',
       usedWords: [],
+      pool,
       strokes: [],
       guessed: [],
       feed: [],

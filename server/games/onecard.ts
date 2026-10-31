@@ -104,6 +104,7 @@ export const onecard: GameModule<OneCardState> = {
       '같은 무늬나 숫자를 내서 손패를 먼저 비우면 승리! 2·A·조커는 공격(2장·3장·♠A 5장·흑백조커 5장·컬러조커 7장), J는 건너뛰기, Q는 방향 전환, K는 한 번 더, 7은 무늬 바꾸기.',
     minPlayers: 2,
     maxPlayers: 8,
+    options: [{ key: 'maxHand', label: '파산 기준 (손패 장수)', default: '20', choices: ['15', '20', '25'].map((v) => ({ value: v, label: `${v}장` })) }],
   },
 
   setup(ctx, options) {

@@ -5,6 +5,8 @@ import { Scoreboard, useNames, type GameProps } from './common.tsx';
 
 interface View {
   phase: 'hint' | 'vote' | 'liarGuess' | 'result';
+  mode: 'normal' | 'fool';
+  foolWord: string | null;
   category: string;
   word: string | null;
   isLiar: boolean;
@@ -43,7 +45,9 @@ export function Liar({ view, room }: GameProps<View>) {
   return (
     <div className="liar">
       <div className={`card secret-card ${view.isLiar && view.phase !== 'result' ? 'liar-card' : ''}`}>
-        <div className="muted">주제</div>
+        <div className="muted">
+          주제{view.mode === 'fool' && <span className="tag">🤪 바보 모드 · 라이어도 자기가 라이어인 줄 몰라요</span>}
+        </div>
         <div className="big-text">{view.category}</div>
         {view.phase === 'result' ? (
           <div>
@@ -52,7 +56,9 @@ export function Liar({ view, room }: GameProps<View>) {
         ) : !inGame ? (
           <div className="muted">관전 중 (제시어는 끝나면 공개됩니다)</div>
         ) : view.isLiar ? (
-          <div className="liar-word">🤥 당신은 라이어입니다! 들키지 않게 설명하세요.</div>
+          <div className="liar-word">
+            {view.mode === 'fool' ? '😱 사실 당신이 라이어였습니다! 받은 단어는 가짜였어요.' : '🤥 당신은 라이어입니다! 들키지 않게 설명하세요.'}
+          </div>
         ) : (
           <div>
             제시어: <b className="big-text">{view.word}</b>
@@ -148,6 +154,7 @@ export function Liar({ view, room }: GameProps<View>) {
           <p>{view.result.reason}</p>
           <p>
             라이어: <b>{name(view.liarId)}</b> · 제시어: <b>{view.word}</b>
+            {view.foolWord && <> · 라이어가 받은 가짜 단어: {view.foolWord}</>}
             {view.liarGuess && <> · 라이어의 답: {view.liarGuess}</>}
           </p>
           {view.votes && (

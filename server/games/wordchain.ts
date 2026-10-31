@@ -86,6 +86,7 @@ export const wordchain: GameModule<WordChainState> = {
     description: '앞 단어의 끝 글자로 시작하는 단어를 제한 시간 안에 말하세요. 두음법칙 허용(력→역). 시간이 지나면 탈락, 마지막 한 명이 우승!',
     minPlayers: 2,
     maxPlayers: 15,
+    options: [{ key: 'turnSeconds', label: '제한 시간', default: '15', choices: ['10', '15', '20', '30'].map((v) => ({ value: v, label: `${v}초` })) }],
   },
 
   setup(ctx, options) {

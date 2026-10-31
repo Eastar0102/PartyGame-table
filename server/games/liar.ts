@@ -1,5 +1,5 @@
 import { nameOf, pick, shuffle, tallyVotes, type GameContext, type GameModule } from './types.ts';
-import { LIAR_CATEGORIES } from './words.ts';
+import { LIAR_CATEGORIES, parseCustomWords, similarWord } from './words.ts';
 
 type Phase = 'hint' | 'vote' | 'liarGuess' | 'result';
 
@@ -19,19 +19,52 @@ interface LiarState {
   result: null | { winner: 'liar' | 'citizens'; reason: string };
   scores: Record<string, number>;
   categoryOption: string;
+  /** normal: 라이어는 제시어를 모름, fool: 라이어도 비슷한 다른 단어를 받아 자기가 라이어인 줄 모름 */
+  mode: 'normal' | 'fool';
+  foolWord: string | null;
+  customTopic: string;
+  customWords: string[];
+  /** 이 방에서 이미 나온 제시어 (다 쓰면 다시 섞어서 처음부터) */
+  used: string[];
 }
 
-function newRound(state: LiarState | null, ctx: GameContext, categoryOption: string, hintRounds: number): LiarState {
-  const categories = Object.keys(LIAR_CATEGORIES);
-  const category = categories.includes(categoryOption) ? categoryOption : pick(categories, ctx.random);
+const CUSTOM = 'custom';
+
+interface RoundSettings {
+  categoryOption: string;
+  hintRounds: number;
+  mode: 'normal' | 'fool';
+  customTopic: string;
+  customWords: string[];
+}
+
+function newRound(state: LiarState | null, ctx: GameContext, cfg: RoundSettings): LiarState {
+  let category: string;
+  let list: string[];
+  if (cfg.categoryOption === CUSTOM) {
+    category = cfg.customTopic || '우리끼리 제시어';
+    list = cfg.customWords;
+  } else {
+    const categories = Object.keys(LIAR_CATEGORIES);
+    category = categories.includes(cfg.categoryOption) ? cfg.categoryOption : pick(categories, ctx.random);
+    list = LIAR_CATEGORIES[category];
+  }
+  // 이미 나온 단어는 빼고 고른다. 이 목록을 다 썼으면 이 목록만 다시 처음부터
+  let used = state?.used ?? [];
+  let fresh = list.filter((w) => !used.includes(w));
+  if (fresh.length === 0) {
+    used = used.filter((w) => !list.includes(w));
+    fresh = list;
+  }
+  const word = pick(fresh, ctx.random);
   const alive = state ? [...state.order] : ctx.players.map((p) => p.id);
   return {
     phase: 'hint',
     category,
-    word: pick(LIAR_CATEGORIES[category], ctx.random),
+    word,
     liarId: pick(alive, ctx.random),
     order: shuffle(alive, ctx.random),
-    hintRounds,
+    hintRounds: cfg.hintRounds,
     turn: 0,
     hints: [],
     votes: {},
@@ -40,7 +73,12 @@ function newRound(state: LiarState | null, ctx: GameContext, categoryOption: str
     liarGuess: null,
     result: null,
     scores: state?.scores ?? Object.fromEntries(alive.map((id) => [id, 0])),
-    categoryOption,
+    categoryOption: cfg.categoryOption,
+    mode: cfg.mode,
+    foolWord: cfg.mode === 'fool' ? similarWord(category, word, list, ctx.random) : null,
+    customTopic: cfg.customTopic,
+    customWords: cfg.customWords,
+    used: [...used, word],
   };
 }
 
@@ -58,7 +96,11 @@ function resolveVotes(state: LiarState, ctx: GameContext) {
   state.accused = top;
   if (top === state.liarId) {
     state.phase = 'liarGuess';
-    ctx.announce(`라이어 ${nameOf(ctx, top)}님이 지목되었습니다! 라이어가 제시어를 맞히면 역전승합니다.`);
+    ctx.announce(
+      state.mode === 'fool'
+        ? `${nameOf(ctx, top)}님이 바로 라이어였습니다! (본인도 몰랐겠죠?) 진짜 제시어를 맞히면 역전승합니다.`
+        : `라이어 ${nameOf(ctx, top)}님이 지목되었습니다! 라이어가 제시어를 맞히면 역전승합니다.`,
+    );
   } else if (top === null) {
     finish(state, ctx, 'liar', '투표가 동점이라 아무도 지목되지 않았습니다.');
   } else {
@@ -71,14 +113,54 @@ export const liar: GameModule<LiarState> = {
     id: 'liar',
     name: '라이어 게임',
     emoji: '🤥',
-    description: '한 명만 제시어를 모릅니다. 돌아가며 한 줄씩 설명하고 투표로 라이어를 찾아내세요. 지목된 라이어는 제시어를 맞히면 역전!',
+    description:
+      '한 명만 제시어를 모릅니다. 돌아가며 한 줄씩 설명하고 투표로 라이어를 찾아내세요. 지목된 라이어는 제시어를 맞히면 역전! 바보 모드에서는 라이어도 비슷한 다른 단어를 받아서 자기가 라이어인 줄 모릅니다.',
     minPlayers: 3,
     maxPlayers: 15,
+    options: [
+      {
+        key: 'category',
+        label: '주제',
+        default: 'random',
+        choices: [
+          { value: 'random', label: '🎲 매 판 무작위' },
+          ...Object.entries(LIAR_CATEGORIES).map(([c, words]) => ({ value: c, label: `${c} (${words.length})` })),
+          { value: CUSTOM, label: '✏️ 우리끼리 제시어 (직접 입력)' },
+        ],
+      },
+      { key: 'customTopic', label: '주제 이름', default: '', type: 'text', placeholder: '예: 우리 반 친구들, 같이 간 여행지', showIf: { key: 'category', value: CUSTOM } },
+      {
+        key: 'customWords',
+        label: '제시어 (쉼표나 줄바꿈으로 구분, 3개 이상)',
+        default: '',
+        type: 'textarea',
+        placeholder: '예: 민수, 지영, 철수, 수학 선생님\n또는 한 줄에 하나씩',
+        showIf: { key: 'category', value: CUSTOM },
+      },
+      {
+        key: 'mode',
+        label: '모드',
+        default: 'normal',
+        choices: [
+          { value: 'normal', label: '기본 (라이어는 제시어를 모름)' },
+          { value: 'fool', label: '바보 모드 (라이어도 모름)' },
+        ],
+      },
+      { key: 'hintRounds', label: '설명 바퀴 수', default: '1', choices: [{ value: '1', label: '1바퀴' }, { value: '2', label: '2바퀴' }] },
+    ],
   },
 
   setup(ctx, options) {
-    const rounds = Number(options.hintRounds) === 2 ? 2 : 1;
-    return newRound(null, ctx, String(options.category ?? 'random'), rounds);
+    const categoryOption = String(options.category ?? 'random');
+    const customWords = parseCustomWords(options.customWords);
+    if (categoryOption === CUSTOM && customWords.length < 3) throw new Error('우리끼리 제시어는 3개 이상 입력해 주세요.');
+    return newRound(null, ctx, {
+      categoryOption,
+      hintRounds: Number(options.hintRounds) === 2 ? 2 : 1,
+      mode: options.mode === 'fool' ? 'fool' : 'normal',
+      customTopic: String(options.customTopic ?? '').trim().slice(0, 30),
+      customWords,
+    });
   },
 
   action(state, pid, action, ctx) {
@@ -136,7 +218,7 @@ export const liar: GameModule<LiarState> = {
         if (pid !== ctx.hostId) return '방장만 다음 판을 시작할 수 있습니다.';
         if (state.phase !== 'result') return '아직 이번 판이 끝나지 않았습니다.';
         if (state.order.length < 3) return '3명 이상 남아 있어야 합니다.';
-        Object.assign(state, newRound(state, ctx, state.categoryOption, state.hintRounds));
+        Object.assign(state, newRound(state, ctx, state));
         ctx.announce(`새 판 시작! 주제는 "${state.category}"입니다.`);
         return;
       }
@@ -149,12 +231,19 @@ export const liar: GameModule<LiarState> = {
     const done = state.phase === 'result';
     const isLiar = viewerId === state.liarId;
     const inGame = state.order.includes(viewerId);
+    // 바보 모드에서는 라이어가 지목되기 전까지 자기가 라이어인 줄 모르고, 비슷한 단어를 본다
+    const liarKnows = state.mode === 'normal' || state.phase === 'liarGuess' || done;
+    let word: string | null = null;
+    if (done) word = state.word;
+    else if (inGame && !isLiar) word = state.word;
+    else if (inGame && isLiar && !liarKnows) word = state.foolWord;
     return {
       phase: state.phase,
+      mode: state.mode,
       category: state.category,
-      // 라이어와 관전자에게는 제시어를 숨긴다 (끝나면 공개)
-      word: done || (inGame && !isLiar) ? state.word : null,
-      isLiar: done ? isLiar : inGame && isLiar,
+      word,
+      isLiar: inGame && isLiar && liarKnows,
+      foolWord: done ? state.foolWord : null,
       liarId: done || state.phase === 'liarGuess' ? state.liarId : null,
       order: state.order,
       currentTurn: state.phase === 'hint' ? state.order[state.turn % state.order.length] : null,

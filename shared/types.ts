@@ -22,6 +22,20 @@ export interface GameMeta {
   description: string;
   minPlayers: number;
   maxPlayers: number;
+  /** 게임 시작 전에 방장이 고르는 옵션 */
+  options?: GameOption[];
+}
+
+export interface GameOption {
+  key: string;
+  label: string;
+  default: string;
+  /** select: 목록에서 고르기, text: 한 줄 입력, textarea: 여러 줄 입력 */
+  type?: 'select' | 'text' | 'textarea';
+  choices?: { value: string; label: string }[];
+  placeholder?: string;
+  /** 다른 옵션이 특정 값일 때만 보여준다 */
+  showIf?: { key: string; value: string | string[] };
 }
 
 export interface RoomState {
