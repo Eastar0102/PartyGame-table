@@ -1,9 +1,12 @@
 import type { FC } from 'react';
+import { Blackjack } from './Blackjack.tsx';
 import type { GameProps } from './common.tsx';
 import { Drawing } from './Drawing.tsx';
 import { Gomoku } from './Gomoku.tsx';
 import { Liar } from './Liar.tsx';
 import { Mafia } from './Mafia.tsx';
+import { OldMaid } from './OldMaid.tsx';
+import { OneCard } from './OneCard.tsx';
 import { Trpg } from './Trpg.tsx';
 import { WordChain } from './WordChain.tsx';
 
@@ -41,4 +44,10 @@ export const GAME_UI: Record<string, { Component: FC<GameProps>; options?: Optio
     Component: WordChain,
     options: [{ key: 'turnSeconds', label: '제한 시간', default: '15', choices: ['10', '15', '20', '30'].map((v) => ({ value: v, label: `${v}초` })) }],
   },
+  onecard: {
+    Component: OneCard,
+    options: [{ key: 'maxHand', label: '파산 기준 (손패 장수)', default: '20', choices: ['15', '20', '25'].map((v) => ({ value: v, label: `${v}장` })) }],
+  },
+  oldmaid: { Component: OldMaid },
+  blackjack: { Component: Blackjack },
 };

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { act } from '../socket.ts';
+import { useCountdownTicks, useSoundOn, useTurnSound } from '../sound.ts';
 import { useCountdown, useNames, type GameProps } from './common.tsx';
 
 interface View {
@@ -20,6 +21,11 @@ export function WordChain({ view, room }: GameProps<View>) {
   const remaining = useCountdown(view.endsAt);
   const myTurn = view.current === room.me;
   const inputRef = useRef<HTMLInputElement>(null);
+  useTurnSound(myTurn);
+  useCountdownTicks(remaining, view.phase === 'playing' && myTurn);
+  useSoundOn(view.words.length, (n, p) => (n > p ? (view.words[n - 1]?.id ? 'card' : null) : null));
+  useSoundOn(view.eliminated.length, (n, p) => (n > p ? 'fail' : null));
+  useSoundOn(view.winner, (w) => (w ? (w === room.me ? 'win' : 'success') : null));
   const listRef = useRef<HTMLDivElement>(null);
   const lastEntry = view.words[view.words.length - 1];
   const last = lastEntry?.id ? lastEntry : null;

@@ -1,4 +1,5 @@
 import { act } from '../socket.ts';
+import { useSoundOn, useTurnSound } from '../sound.ts';
 import { useNames, type GameProps } from './common.tsx';
 
 const SIZE = 15;
@@ -13,6 +14,7 @@ interface View {
   winner: string | null;
   winLine: number[];
   draw: boolean;
+  moves: number;
 }
 
 export function Gomoku({ view, room }: GameProps<View>) {
@@ -21,6 +23,9 @@ export function Gomoku({ view, room }: GameProps<View>) {
   const over = !!view.winner || view.draw;
   const myTurn = !over && myColor === view.turn;
   const win = new Set(view.winLine);
+  useTurnSound(myTurn);
+  useSoundOn(view.moves, (now, prev) => (now > prev ? 'place' : null));
+  useSoundOn(view.winner, (w) => (w ? (w === room.me ? 'win' : myColor ? 'fail' : 'success') : null));
 
   let status: string;
   if (view.winner) status = `🏆 ${name(view.winner)}님 승리!`;

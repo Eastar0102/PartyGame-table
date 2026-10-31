@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { act } from '../socket.ts';
+import { useSoundOn } from '../sound.ts';
 import { useNames, type GameProps } from './common.tsx';
 
 interface Roll {
@@ -65,6 +66,7 @@ export function Trpg({ view, room }: GameProps<View>) {
   const [secret, setSecret] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
   const lastRoll = view.rolls[view.rolls.length - 1]?.id;
+  useSoundOn(lastRoll, (now) => (now ? 'dice' : null));
 
   useEffect(() => {
     const el = logRef.current;

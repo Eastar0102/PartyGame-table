@@ -1,11 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 import type { RoomState } from '../../shared/types.ts';
 import { socket } from '../socket.ts';
+import { useSoundOn } from '../sound.ts';
 
 export function Chat({ room }: { room: RoomState }) {
   const [text, setText] = useState('');
   const listRef = useRef<HTMLDivElement>(null);
-  const last = room.chat[room.chat.length - 1]?.id;
+  const lastMsg = room.chat[room.chat.length - 1];
+  const last = lastMsg?.id;
+  useSoundOn(last, () => {
+    if (!lastMsg) return null;
+    if (lastMsg.kind === 'chat') return lastMsg.from?.id === room.me ? null : 'chat';
+    return lastMsg.text.endsWith('들어왔습니다.') ? 'join' : null;
+  });
 
   useEffect(() => {
     const el = listRef.current;

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { act } from '../socket.ts';
+import { useSoundOn } from '../sound.ts';
 import { useNames, type GameProps } from './common.tsx';
 
 type Role = 'mafia' | 'doctor' | 'police' | 'citizen';
@@ -33,6 +34,13 @@ export function Mafia({ view, room }: GameProps<View>) {
   const role = view.myRole;
   const isHost = room.me === room.hostId;
   const myDayVote = view.dayVotes[room.me];
+  useSoundOn(view.phase + view.day, () => {
+    if (view.phase === 'night') return 'night';
+    if (view.phase === 'day') return 'day';
+    if (!view.winner || !role) return 'success';
+    return (view.winner === 'mafia') === (role === 'mafia') ? 'win' : 'fail';
+  });
+  useSoundOn(view.alive.length, (n, p) => (n < p && view.phase !== 'over' ? 'attack' : null));
 
   const voteCount = (id: string) => Object.values(view.dayVotes).filter((v) => v === id).length;
 

@@ -2,6 +2,8 @@ import { useState } from 'react';
 import type { RoomState } from '../../shared/types.ts';
 import { GAME_UI } from '../games/index.tsx';
 import { socket } from '../socket.ts';
+import { Avatar } from '../art/Avatar.tsx';
+import { setMuted, setVolume, getSoundSettings, play, useSoundSettings } from '../sound.ts';
 import { Chat } from './Chat.tsx';
 import { Lobby } from './Lobby.tsx';
 
@@ -37,6 +39,7 @@ export function Room({ room, publicUrl, onLeave }: { room: RoomState; publicUrl:
           </button>
         </div>
         <div className="row">
+          <SoundControl />
           {game && meta && (
             <span className="muted">
               {meta.emoji} {meta.name} 진행 중
@@ -81,6 +84,7 @@ function PlayerList({ room }: { room: RoomState }) {
           return (
             <li key={p.id} className={p.connected ? '' : 'offline'}>
               <span className="pname">
+                <Avatar id={p.id} size={24} dim={!p.connected} />
                 {p.isHost && '👑 '}
                 {p.name}
                 {p.id === room.me && <span className="tag">나</span>}
@@ -115,5 +119,27 @@ function PlayerList({ room }: { room: RoomState }) {
         })}
       </ul>
     </div>
+  );
+}
+
+function SoundControl() {
+  useSoundSettings();
+  const { muted, volume } = getSoundSettings();
+  return (
+    <span className="sound-ctl">
+      <button
+        className="small"
+        title={muted ? '소리 켜기' : '소리 끄기'}
+        onClick={() => {
+          setMuted(!muted);
+          if (muted) setTimeout(() => play('click'), 0);
+        }}
+      >
+        {muted ? '🔇' : '🔊'}
+      </button>
+      {!muted && (
+        <input type="range" min={0} max={1} step={0.05} value={volume} aria-label="볼륨" onChange={(e) => setVolume(Number(e.target.value))} onPointerUp={() => play('click')} />
+      )}
+    </span>
   );
 }

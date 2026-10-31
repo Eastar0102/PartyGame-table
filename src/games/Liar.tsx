@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { act } from '../socket.ts';
+import { useSoundOn, useTurnSound } from '../sound.ts';
 import { Scoreboard, useNames, type GameProps } from './common.tsx';
 
 interface View {
@@ -29,6 +30,15 @@ export function Liar({ view, room }: GameProps<View>) {
   const isHost = room.me === room.hostId;
   const inGame = view.order.includes(room.me);
   const myTurn = view.currentTurn === room.me;
+  useTurnSound(myTurn);
+  useSoundOn(view.hints.length, (n, p) => (n > p ? 'card' : null));
+  useSoundOn(view.phase, (ph) => {
+    if (ph === 'vote' || ph === 'liarGuess') return 'turn';
+    if (ph !== 'result' || !view.result) return null;
+    const liarWon = view.result.winner === 'liar';
+    if (!inGame) return 'success';
+    return liarWon === (room.me === view.liarId) ? 'win' : 'fail';
+  });
 
   return (
     <div className="liar">

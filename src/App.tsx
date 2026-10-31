@@ -78,6 +78,8 @@ export function App() {
     socket.on('room:kicked', onKicked);
     socket.on('connect', onConnect);
     socket.on('disconnect', onDisconnect);
+    // 이 화면이 준비되기 전에 이미 연결됐으면 connect 이벤트를 놓치므로 현재 상태로 맞춘다
+    setConnected(socket.connected);
     return () => {
       socket.off('room:state', onState);
       socket.off('room:kicked', onKicked);

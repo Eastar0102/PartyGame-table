@@ -192,7 +192,8 @@ export class RoomManager {
       this.sync(ctx.room);
     });
 
-    socket.on('disconnect', () => {
+    socket.on('disconnect', (reason, description) => {
+      if (process.env.DEBUG_SOCKETS) console.log(new Date().toISOString(), 'disconnect', socket.id, reason, description instanceof Error ? description.message : (description ?? ''));
       const ctx = this.lookup(socket);
       this.socketRoom.delete(socket.id);
       if (!ctx) return;

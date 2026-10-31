@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { act, actFast, socket } from '../socket.ts';
+import { useCountdownTicks, useSoundOn, useTurnSound } from '../sound.ts';
 import { Scoreboard, useCountdown, useNames, type GameProps } from './common.tsx';
 
 interface Stroke {
@@ -59,6 +60,10 @@ export function Drawing({ view, room }: GameProps<View>) {
   const isDrawer = view.drawer === room.me && view.phase === 'drawing';
   const playing = view.players.includes(room.me);
   const guessed = view.guessed.includes(room.me);
+  useTurnSound(isDrawer);
+  useCountdownTicks(remaining, view.phase === 'drawing');
+  useSoundOn(view.guessed.length, (n, p) => (n > p ? 'success' : null));
+  useSoundOn(view.phase, (ph) => (ph === 'reveal' ? 'click' : ph === 'over' ? 'win' : null));
 
   // 그리는 중인 획 정보
   const drawingRef = useRef<{ points: number[]; sent: number; chunks: number } | null>(null);
