@@ -66,7 +66,7 @@ export function OldMaid({ view, room }: GameProps<View>) {
         </div>
       ) : (
         <div className="felt column">
-          <p className={`status ${myTurn ? 'my-turn' : ''}`} style={{ color: myTurn ? undefined : '#fff' }}>
+          <p className={`status ${myTurn ? 'my-turn' : ''}`}>
             {myTurn ? `내 차례! ${name(view.target)}님의 카드 중 한 장을 뽑으세요` : `${name(view.current)}님이 ${name(view.target)}님의 카드를 고르는 중…`}
           </p>
           {view.target && (
