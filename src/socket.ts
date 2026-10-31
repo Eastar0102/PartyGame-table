@@ -7,7 +7,9 @@ export const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io({ a
 export function getToken(): string {
   let t = localStorage.getItem('pgt-token');
   if (!t) {
-    t = crypto.randomUUID() + crypto.randomUUID();
+    // crypto.randomUUID는 HTTPS에서만 동작하므로, http 주소(터널, 같은 와이파이)에서도 되는 방식을 쓴다
+    const bytes = crypto.getRandomValues(new Uint8Array(24));
+    t = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
     localStorage.setItem('pgt-token', t);
   }
   return t;
