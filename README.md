@@ -52,13 +52,23 @@ npm test && npm run typecheck
 SITE_PASSWORD=우리끼리 npm start
 ```
 
+## 내 컴퓨터로 서버 열기
+
+포트포워딩, 방화벽, HTTPS 설정과 친구 초대 방법은 [docs/SELF_HOSTING.md](docs/SELF_HOSTING.md)에 정리되어 있습니다.
+
+서버를 켤 때 `PUBLIC_URL`에 친구들이 접속할 주소를 넣으면 초대 링크가 그 주소로 만들어집니다.
+
+```bash
+PUBLIC_URL=https://myparty.duckdns.org SITE_PASSWORD=우리끼리 npm start
+```
+
 ## 배포하기
 
 서버가 계속 떠 있어야 하므로 Render, Railway, Fly.io 같은 Node 호스팅을 씁니다. WebSocket을 지원하는 곳이면 됩니다.
 
 - Build command: `npm install && npm run build`
 - Start command: `npm start`
-- 환경 변수: `PORT`(보통 호스팅이 자동 지정), `SITE_PASSWORD`(선택)
+- 환경 변수: `PORT`(보통 호스팅이 자동 지정), `SITE_PASSWORD`(선택), `PUBLIC_URL`(선택)
 
 방과 게임 상태는 서버 메모리에만 있어서, 서버가 재시작되면 진행 중이던 방은 사라집니다.
 

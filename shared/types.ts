@@ -65,4 +65,6 @@ export interface ServerToClientEvents {
 
 export interface ServerInfo {
   passwordRequired: boolean;
+  /** 친구들이 접속할 외부 주소 (설정했을 때만). 초대 링크에 쓰인다 */
+  publicUrl: string | null;
 }

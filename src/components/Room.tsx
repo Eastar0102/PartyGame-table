@@ -5,7 +5,7 @@ import { socket } from '../socket.ts';
 import { Chat } from './Chat.tsx';
 import { Lobby } from './Lobby.tsx';
 
-export function Room({ room, onLeave }: { room: RoomState; onLeave: () => void }) {
+export function Room({ room, publicUrl, onLeave }: { room: RoomState; publicUrl: string | null; onLeave: () => void }) {
   const [copied, setCopied] = useState(false);
   const isHost = room.me === room.hostId;
   const game = room.game;
@@ -13,7 +13,8 @@ export function Room({ room, onLeave }: { room: RoomState; onLeave: () => void }
   const meta = game ? room.games.find((g) => g.id === game.id) : null;
 
   const copyLink = async () => {
-    const link = `${location.origin}${location.pathname}#/${room.code}`;
+    // 서버에 PUBLIC_URL이 있으면 그 주소로 (방장이 localhost로 접속해도 친구가 열 수 있는 링크가 되도록)
+    const link = `${publicUrl ?? location.origin + location.pathname.replace(/\/$/, '')}/#/${room.code}`;
     try {
       await navigator.clipboard.writeText(link);
     } catch {

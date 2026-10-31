@@ -33,7 +33,7 @@ export function App() {
     fetch('/api/info')
       .then((r) => r.json())
       .then(setInfo)
-      .catch(() => setInfo({ passwordRequired: false }));
+      .catch(() => setInfo({ passwordRequired: false, publicUrl: null }));
   }, []);
 
   const enter = useCallback(
@@ -106,7 +106,7 @@ export function App() {
     <>
       {!connected && <div className="banner">서버와 연결이 끊겼습니다. 다시 연결하는 중…</div>}
       {room ? (
-        <Room room={room} onLeave={leave} />
+        <Room room={room} publicUrl={info?.publicUrl ?? null} onLeave={leave} />
       ) : (
         <Home
           name={name}
