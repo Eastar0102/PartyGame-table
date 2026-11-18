@@ -105,3 +105,7 @@ src/games/*.tsx        게임별 화면
 2. `server/games/index.ts`의 `GAME_LIST`에 등록합니다.
 3. `src/games/새게임.tsx`에 화면을 만들고 `src/games/index.tsx`의 `GAME_UI`에 등록합니다.
 4. 시작 옵션이 있으면 게임 모듈의 `meta.options`에 적습니다. 로비에 선택 상자나 입력란으로 자동으로 나타납니다.
+
+## 라이선스
+
+[MIT](LICENSE). 자유롭게 참고하고, 가져다 쓰고, 고쳐도 됩니다. 코드를 가져다 쓸 때는 `LICENSE` 파일의 저작권 표시를 함께 남겨 주세요.

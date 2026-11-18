@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "description": "친구들끼리 TRPG와 보드·파티게임을 즐기는 실시간 웹 게임 테이블",
+  "license": "MIT",
   "scripts": {
     "dev": "concurrently -k -n server,client -c blue,green \"npm:dev:server\" \"npm:dev:client\"",
     "dev:server": "tsx watch server/index.ts",
